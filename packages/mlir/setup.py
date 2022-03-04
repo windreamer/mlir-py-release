@@ -209,7 +209,7 @@ cmake_args = [
     f'-DLLVM_ENABLE_ASSERTIONS={"ON" if assertions else "OFF"}',
     '-DLLVM_TARGETS_TO_BUILD=host',
     '-DLLVM_ENABLE_PROJECTS=mlir',
-    '-DMLIR_BINDINGS_PYTHON_ENABLED=ON',
+    '-DMLIR_ENABLE_BINDINGS_PYTHON=ON',
     '-DMLIR_PYTHON_BINDINGS_VERSION_LOCKED=OFF',
     f'-DPython3_EXECUTABLE:FILEPATH={sys.executable}',
     # Configure the obsolete python executable property too. It can latch
@@ -219,16 +219,8 @@ cmake_args = [
 ]
 
 cmake_targets = [
-    # Headers.
     'install-mlir-headers',
-    # Python bindings.
-    'install-MLIRBindingsPythonSources',
-    'install-MLIRBindingsPythonDialects',
-    # C-API shared library/DLL.
-    f'install-MLIRPublicAPI{stripped}',
-    # Python extensions.
-    f'install-MLIRTransformsBindingsPythonExtension{stripped}',
-    f'install-MLIRCoreBindingsPythonExtension{stripped}',
+    'install-MLIRPythonModules',
 ]
 
 ### HACK: Add a Python3_LIBRARY because cmake needs it, but it legitimately
@@ -301,6 +293,23 @@ cmake_build_args = [
 ] + cmake_targets
 report(f'Running cmake (build/install): {" ".join(cmake_build_args)}')
 subprocess.check_call(cmake_build_args)
+
+shutil.rmtree(
+    os.path.join(install_dir, 'python', 'mlir'),
+    ignore_errors=True,
+)
+os.makedirs(
+    os.path.join(install_dir, 'python'),
+    exist_ok=True,
+)
+os.rename(
+    os.path.join(install_dir, 'python_packages', 'mlir_core', 'mlir'),
+    os.path.join(install_dir, 'python', 'mlir'),
+)
+shutil.rmtree(
+    os.path.join(install_dir, 'python_packages', 'mlir_core', 'mlir'),
+    ignore_errors=True,
+)
 
 ### Hand-off to setuptools.
 # Parse the command line and check the arguments
